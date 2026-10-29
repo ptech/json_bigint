@@ -50,7 +50,7 @@ Object? decodeJson(
   if (settings == null) {
     return JSONBigIntConfig._parser.parse(input).value;
   } else {
-    return _JsonDefinition(settings).build<Object?>().parse(input).value;
+    return _JsonDefinition(settings).build().parse(input).value;
   }
 }
 
@@ -124,14 +124,16 @@ class _JsonDefinition extends GrammarDefinition<Object?> {
 
   Parser<String> characterUnicode() => seq2(
         string('\\u'),
-        pattern('0-9A-Fa-f').times(4).flatten('4-digit hex number expected'),
+        pattern('0-9A-Fa-f')
+            .times(4)
+            .flatten(message: '4-digit hex number expected'),
       ).map2((_, value) => String.fromCharCode(int.parse(value, radix: 16)));
 
   // Parser<BigInt> integralToken() => (char('-').optional() & digit().plus())
   //     .flatten('number expected')
   //     .map(BigInt.parse);
   Parser<Object> numberToken() => ref0(numberPrimitive)
-      .flatten('number expected')
+      .flatten(message: 'number expected')
       .trim()
       .map((s) => _numOrBigInt(s, settings));
 
@@ -207,13 +209,13 @@ abstract class JSONBigIntConfig {
   /// To avoid rebuilding the parser every time decodeJson is called, a parser is cached internally and updated every time the setting is modified.
   /// However, since Dart does not have access control as granular as Rust's `pub(crate)`, I have to define this class here (not very elegant but effective).
   static Parser<Object?> _parser =
-      const _JsonDefinition(DecoderSettings()).build<Object?>();
+      const _JsonDefinition(DecoderSettings()).build();
 
   static DecoderSettings get decoderSettings => _decoderSettings;
 
   static set decoderSettings(DecoderSettings settings) {
     _decoderSettings = settings;
     // rebuild parser with new settings
-    _parser = _JsonDefinition(settings).build<Object?>();
+    _parser = _JsonDefinition(settings).build();
   }
 }
